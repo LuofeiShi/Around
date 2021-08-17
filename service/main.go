@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/pborman/uuid"
 	elastic "gopkg.in/olivere/elastic.v3"
@@ -27,7 +28,7 @@ const (
 	INDEX    = "around"
 	TYPE     = "post"
 	DISTANCE = "200km"
-	ES_URL   = "http://35.202.149.66:9200"
+	ES_URL   = "http://130.211.195.121:9200"
 )
 
 func main() {
@@ -145,8 +146,9 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	for _, item := range searchResult.Each(reflect.TypeOf(typ)) { // instance of
 		p := item.(Post) // p = (Post) item
 		fmt.Printf("Post by %s: %s at lat %v and lon %v\n", p.User, p.Message, p.Location.Lat, p.Location.Lon)
-
-		ps = append(ps, p)
+		if !containsFilteredWords(&p.Message) {
+			ps = append(ps, p)
+		}
 	}
 
 	js, err := json.Marshal(ps)
@@ -157,4 +159,18 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(js)
+}
+
+func containsFilteredWords(s *string) bool {
+	filteredWords := []string{
+		// put some filtered words here.
+		"fuck",
+		"python",
+	}
+	for _, word := range filteredWords {
+		if strings.Contains(*s, word) {
+			return true
+		}
+	}
+	return false
 }
